@@ -105,3 +105,23 @@ def test_remove_from_watchlist_not_present_raises(app, sample_user, sample_film)
     with app.app_context():
         with pytest.raises(NotInWatchlistError):
             remove_from_watchlist(user_id=sample_user, film_id=sample_film)
+
+
+# ── public=False override ────────────────────────────────────────────────────
+
+def test_add_to_watchlist_respects_public_false(app, sample_user, sample_film):
+    """
+    Passing public=False should persist a private entry even though the
+    default is public=True. Guards against a regression where the
+    stretch `public` parameter is dropped on its way to the ORM.
+    """
+    with app.app_context():
+        entry = add_to_watchlist(
+            user_id=sample_user, film_id=sample_film, public=False
+        )
+        assert entry.public is False
+
+        reloaded = WatchlistEntry.query.filter_by(
+            user_id=sample_user, film_id=sample_film
+        ).first()
+        assert reloaded.public is False
